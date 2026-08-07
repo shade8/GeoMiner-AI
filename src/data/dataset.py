@@ -81,9 +81,27 @@ class MineSegmentationDataset(Dataset):
 
         try:
 
-            with rasterio.open(image_path) as src:
+            for attempt in range(3):
 
-                image = src.read()
+                try:
+                    with rasterio.open(image_path) as src:
+                        image = src.read()
+
+                    return image
+
+                except Exception:
+
+                    if attempt == 2:
+                        logger.exception(
+                            f"Unable to load image {image_path}"
+                        )
+                        raise
+
+                    logger.warning(
+                        f"Retry {attempt + 1}/3 reading image: {image_path}"
+                    )
+
+                    time.sleep(1)
 
             image = image.transpose(
                 1,
