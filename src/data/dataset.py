@@ -180,12 +180,7 @@ class MineSegmentationDataset(Dataset):
 
         while True:
 
-            print(type(self.samples[idx]))
-            print(self.samples[idx])
-            sample = self.samples[idx]
-
-            image_path = sample["image"]
-            mask_path = sample["mask"]
+            image_path, mask_path = self.samples[idx]
 
             try:
 
