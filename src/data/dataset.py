@@ -7,7 +7,7 @@ import time
 import numpy as np
 import rasterio
 from torch.utils.data import Dataset
-
+import random
 from src.logging_config import setup_logger
 
 logger = setup_logger()
@@ -23,9 +23,20 @@ class MineSegmentationDataset(Dataset):
 
         self.dataset_path = Path(dataset_path)
 
+        self.skipped_samples = 0
+
         self.transforms = transforms
 
         self.samples = self._discover_samples()
+
+        self.skipped_log = (
+            Path("logs") / "skipped_samples.log"
+        )
+
+        self.skipped_log.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
         logger.info(
             f"Loaded {len(self.samples)} samples from {self.dataset_path}"
@@ -165,27 +176,101 @@ class MineSegmentationDataset(Dataset):
 
             raise
 
-    def __getitem__(self, index):
+    def __getitem__(self, idx):
 
-        image_path, mask_path = self.samples[index]
+        while True:
 
-        image = self._load_image(
-            image_path
-        )
+            sample = self.samples[idx]
 
-        mask = self._load_mask(
-            mask_path
-        )
+            image_path = sample["image"]
+            mask_path = sample["mask"]
 
-        if self.transforms:
+            try:
 
-            transformed = self.transforms(
-                image=image,
-                mask=mask,
+                image = self._load_image(image_path)
+                mask = self._load_mask(mask_path)
+
+                if np.isnan(image).any():
+                    raise ValueError(
+                        "Image contains NaN values."
+                    )
+
+                if np.isinf(image).any():
+                    raise ValueError(
+                        "Image contains Inf values."
+                    )
+
+                if np.isnan(mask).any():
+                    raise ValueError(
+                        "Mask contains NaN values."
+                    )
+
+                if np.isinf(mask).any():
+                    raise ValueError(
+                        "Mask contains Inf values."
+                    )
+
+                transformed = self.transforms(
+                    image=image,
+                    mask=mask,
+                )
+
+                return (
+                    transformed["image"],
+                    transformed["mask"],
+                )
+
+            except Exception as e:
+
+                self.skipped_samples += 1
+                if self.skipped_samples % 10 == 0:
+
+                    logger.warning(
+                        f"Skipped {self.skipped_samples} samples so far."
+                    )
+                    
+                message = (
+                    f"Skipped sample\n"
+                    f"Image : {image_path}\n"
+                    f"Mask  : {mask_path}\n"
+                    f"Reason: {str(e)}\n"
+                    f"{'-'*80}\n"
+                )
+
+                logger.warning(message)
+
+                with open(
+                    self.skipped_log,
+                    "a",
+                    encoding="utf-8",
+                ) as f:
+
+                    f.write(message)
+
+                idx = random.randint(
+                    0,
+                    len(self.samples) - 1,
+                )
+
+            image_path, mask_path = self.samples[index]
+
+            image = self._load_image(
+                image_path
             )
 
-            image = transformed["image"]
+            mask = self._load_mask(
+                mask_path
+            )
 
-            mask = transformed["mask"]
+            if self.transforms:
 
-        return image, mask
+                transformed = self.transforms(
+                    image=image,
+                    mask=mask,
+                )
+
+                image = transformed["image"]
+
+                mask = transformed["mask"]
+
+            return image, mask
