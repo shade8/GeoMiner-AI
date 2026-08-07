@@ -180,6 +180,8 @@ class MineSegmentationDataset(Dataset):
 
         while True:
 
+            print(type(self.samples[idx]))
+            print(self.samples[idx])
             sample = self.samples[idx]
 
             image_path = sample["image"]
@@ -228,7 +230,7 @@ class MineSegmentationDataset(Dataset):
                     logger.warning(
                         f"Skipped {self.skipped_samples} samples so far."
                     )
-                    
+
                 message = (
                     f"Skipped sample\n"
                     f"Image : {image_path}\n"
