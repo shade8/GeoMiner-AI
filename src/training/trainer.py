@@ -225,6 +225,29 @@ class Trainer:
                 masks,
             )
 
+            if torch.isnan(loss):
+                print("\n===== DEBUG =====")
+                print("Loss is NaN")
+
+                print(
+                    "Images:",
+                    images.min().item(),
+                    images.max().item(),
+                )
+
+                print(
+                    "Logits:",
+                    logits.min().item(),
+                    logits.max().item(),
+                )
+
+                print(
+                    "Masks:",
+                    torch.unique(masks),
+                )
+
+                raise RuntimeError("NaN loss detected")
+
             loss.backward()
 
             self.optimizer.step()
@@ -379,11 +402,11 @@ class Trainer:
                 epoch,
             )
 
-            self.scheduler.step()
-
             current_lr = (
                 self.optimizer.param_groups[0]["lr"]
             )
+
+            self.scheduler.step()
 
             logger.info(
                 f"Learning Rate : {current_lr:.8f}"

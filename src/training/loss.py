@@ -96,6 +96,14 @@ class SegmentationLoss(nn.Module):
             masks,
         )
 
+        print(
+            f"CE Loss   : {ce_loss.item()}"
+        )
+
+        print(
+            f"Dice Loss : {dice_loss.item()}"
+        )
+
         total_loss = (
             self.ce_weight * ce_loss
             + self.dice_weight * dice_loss
