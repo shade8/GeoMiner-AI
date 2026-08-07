@@ -3,7 +3,7 @@ PyTorch Dataset for GeoMiner AI.
 """
 
 from pathlib import Path
-
+import time
 import numpy as np
 import rasterio
 from torch.utils.data import Dataset
@@ -113,9 +113,26 @@ class MineSegmentationDataset(Dataset):
 
         try:
 
-            with rasterio.open(mask_path) as src:
 
-                mask = src.read(1)
+            for attempt in range(3):
+                try:
+                    with rasterio.open(mask_path) as src:
+                        mask = src.read(1)
+                    break
+
+                except Exception as e:
+
+                    if attempt == 2:
+                        logger.exception(
+                            f"Unable to load mask {mask_path}"
+                        )
+                        raise
+
+                    logger.warning(
+                        f"Retry {attempt+1}/3 reading {mask_path}"
+                    )
+
+                    time.sleep(1)
 
             return mask.astype(np.uint8)
 
