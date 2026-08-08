@@ -188,24 +188,16 @@ class MineSegmentationDataset(Dataset):
                 mask = self._load_mask(mask_path)
 
                 if np.isnan(image).any():
-                    raise ValueError(
-                        "Image contains NaN values."
-                    )
+                    raise ValueError("Image contains NaN values.")
 
                 if np.isinf(image).any():
-                    raise ValueError(
-                        "Image contains Inf values."
-                    )
+                    raise ValueError("Image contains Inf values.")
 
                 if np.isnan(mask).any():
-                    raise ValueError(
-                        "Mask contains NaN values."
-                    )
+                    raise ValueError("Mask contains NaN values.")
 
                 if np.isinf(mask).any():
-                    raise ValueError(
-                        "Mask contains Inf values."
-                    )
+                    raise ValueError("Mask contains Inf values.")
 
                 transformed = self.transforms(
                     image=image,
@@ -220,17 +212,12 @@ class MineSegmentationDataset(Dataset):
             except Exception as e:
 
                 self.skipped_samples += 1
-                if self.skipped_samples % 10 == 0:
-
-                    logger.warning(
-                        f"Skipped {self.skipped_samples} samples so far."
-                    )
 
                 message = (
                     f"Skipped sample\n"
                     f"Image : {image_path}\n"
                     f"Mask  : {mask_path}\n"
-                    f"Reason: {str(e)}\n"
+                    f"Reason: {e}\n"
                     f"{'-'*80}\n"
                 )
 
@@ -244,30 +231,10 @@ class MineSegmentationDataset(Dataset):
 
                     f.write(message)
 
-                idx = random.randint(
-                    0,
-                    len(self.samples) - 1,
-                )
+                if self.skipped_samples % 10 == 0:
 
-            image_path, mask_path = self.samples[index]
+                    logger.warning(
+                        f"Skipped {self.skipped_samples} samples so far."
+                    )
 
-            image = self._load_image(
-                image_path
-            )
-
-            mask = self._load_mask(
-                mask_path
-            )
-
-            if self.transforms:
-
-                transformed = self.transforms(
-                    image=image,
-                    mask=mask,
-                )
-
-                image = transformed["image"]
-
-                mask = transformed["mask"]
-
-            return image, mask
+                idx = (idx + 1) % len(self.samples)
